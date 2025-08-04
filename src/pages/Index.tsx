@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { HeroSection } from "@/components/HeroSection";
 import { JobCard } from "@/components/JobCard";
 import { FilterSection } from "@/components/FilterSection";
@@ -6,6 +7,7 @@ import { jobsData } from "@/data/jobs";
 
 const Index = () => {
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const navigate = useNavigate();
   
   const filteredJobs = jobsData.filter(job => {
     if (selectedFilters.length === 0) return true;
@@ -18,7 +20,7 @@ const Index = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">..
       {/* Hero Section */}
       <HeroSection />
       
@@ -45,12 +47,14 @@ const Index = () => {
             
             {/* Jobs List */}
             <div className="lg:col-span-3">
-              <div className="grid gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredJobs.map((job) => (
-                  <JobCard 
-                    key={job.id} 
-                    {...job}
-                  />
+                  <div 
+                    key={job.id}
+                    onClick={() => navigate(`/job/${job.id}`)}
+                  >
+                    <JobCard {...job} />
+                  </div>
                 ))}
               </div>
               
