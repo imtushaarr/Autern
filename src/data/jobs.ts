@@ -1,5 +1,5 @@
 export interface Job {
-  id: number;
+  id: string;
   title: string;
   company: string;
   location: string;
@@ -7,13 +7,16 @@ export interface Job {
   type: string;
   postedTime: string;
   description: string;
+  keyResponsibilities?: string[];
+  requirements?: string[];
+  benefits?: string[];
   tags: string[];
   companyLogo?: string;
 }
 
 export const jobsData: Job[] = [
   {
-    id: 1,
+    id: "1",
     title: "Senior Frontend Developer",
     company: "TechCorp",
     location: "San Francisco, CA",
@@ -24,7 +27,7 @@ export const jobsData: Job[] = [
     tags: ["React", "TypeScript", "CSS", "JavaScript", "Tailwind"],
   },
   {
-    id: 2,
+    id: "2",
     title: "Product Manager",
     company: "InnovateLabs",
     location: "New York, NY",
@@ -35,7 +38,7 @@ export const jobsData: Job[] = [
     tags: ["Product Strategy", "Analytics", "Agile", "Leadership"],
   },
   {
-    id: 3,
+    id: "3",
     title: "UX/UI Designer",
     company: "DesignStudio",
     location: "Remote",
@@ -46,7 +49,7 @@ export const jobsData: Job[] = [
     tags: ["Figma", "Sketch", "Prototyping", "User Research", "Design Systems"],
   },
   {
-    id: 4,
+    id: "4",
     title: "Full Stack Engineer",
     company: "StartupXYZ",
     location: "Austin, TX",
@@ -57,7 +60,7 @@ export const jobsData: Job[] = [
     tags: ["React", "Node.js", "MongoDB", "AWS", "Docker"],
   },
   {
-    id: 5,
+    id: "5",
     title: "Data Scientist",
     company: "DataCorp",
     location: "Seattle, WA",
@@ -68,7 +71,7 @@ export const jobsData: Job[] = [
     tags: ["Python", "SQL", "Machine Learning", "Pandas", "TensorFlow"],
   },
   {
-    id: 6,
+    id: "6",
     title: "DevOps Engineer",
     company: "CloudTech",
     location: "Denver, CO",
@@ -79,7 +82,7 @@ export const jobsData: Job[] = [
     tags: ["AWS", "Docker", "Kubernetes", "Jenkins", "Terraform"],
   },
   {
-    id: 7,
+    id: "7",
     title: "Mobile Developer",
     company: "AppForge",
     location: "Los Angeles, CA",
@@ -90,7 +93,7 @@ export const jobsData: Job[] = [
     tags: ["React Native", "iOS", "Android", "JavaScript", "Firebase"],
   },
   {
-    id: 8,
+    id: "8",
     title: "Backend Engineer",
     company: "ServerSide Inc",
     location: "Chicago, IL",
@@ -101,7 +104,7 @@ export const jobsData: Job[] = [
     tags: ["Python", "FastAPI", "PostgreSQL", "Redis", "Microservices"],
   },
   {
-    id: 9,
+    id: "9",
     title: "Quality Assurance Engineer",
     company: "TestLabs",
     location: "Remote",
@@ -112,7 +115,7 @@ export const jobsData: Job[] = [
     tags: ["Automation Testing", "Selenium", "Jest", "Cypress", "API Testing"],
   },
   {
-    id: 10,
+    id: "10",
     title: "Marketing Manager",
     company: "GrowthCo",
     location: "Boston, MA",

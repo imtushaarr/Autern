@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,13 +16,73 @@ import {
   Heart,
   Send
 } from "lucide-react";
-import { jobsData } from "@/data/jobs";
+import { Job } from "@/data/jobs";
+import { getJobById, subscribeToJobs, FirebaseJob } from "@/services/jobsService";
 
 export const JobDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [job, setJob] = useState<Job | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [allJobs, setAllJobs] = useState<Job[]>([]);
   
-  const job = jobsData.find(j => j.id === parseInt(id || ""));
+  // Convert Firebase job to local job format
+  const convertFirebaseJobToJob = (firebaseJob: FirebaseJob): Job => ({
+    id: firebaseJob.id || Math.random().toString(),
+    title: firebaseJob.title,
+    company: firebaseJob.company,
+    location: firebaseJob.location,
+    salary: firebaseJob.salary,
+    type: firebaseJob.type,
+    description: firebaseJob.description,
+    keyResponsibilities: firebaseJob.keyResponsibilities,
+    requirements: firebaseJob.requirements,
+    benefits: firebaseJob.benefits,
+    tags: firebaseJob.tags,
+    companyLogo: firebaseJob.companyLogo,
+    postedTime: firebaseJob.postedTime || 'Just now'
+  });
+
+  useEffect(() => {
+    const fetchJob = async () => {
+      if (!id) return;
+      
+      setLoading(true);
+      try {
+        const firebaseJob = await getJobById(id);
+        if (firebaseJob) {
+          setJob(convertFirebaseJobToJob(firebaseJob));
+        }
+      } catch (error) {
+        console.error('Error fetching job:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJob();
+  }, [id]);
+
+  useEffect(() => {
+    // Subscribe to all jobs for similar jobs section
+    const unsubscribe = subscribeToJobs((firebaseJobs) => {
+      const convertedJobs = firebaseJobs.map(convertFirebaseJobToJob);
+      setAllJobs(convertedJobs);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Loading job details...</p>
+        </div>
+      </div>
+    );
+  }
   
   if (!job) {
     return (
@@ -133,39 +194,63 @@ export const JobDetail = () => {
 
                 <div>
                   <h3 className="font-semibold mb-3">Key Responsibilities</h3>
-                  <ul className="space-y-2 text-muted-foreground">
-                    <li>• Design and develop high-quality software solutions</li>
-                    <li>• Collaborate with cross-functional teams to deliver projects</li>
-                    <li>• Write clean, maintainable, and well-documented code</li>
-                    <li>• Participate in code reviews and technical discussions</li>
-                    <li>• Stay updated with latest industry trends and technologies</li>
-                  </ul>
+                  {job.keyResponsibilities && job.keyResponsibilities.length > 0 ? (
+                    <ul className="space-y-2 text-muted-foreground">
+                      {job.keyResponsibilities.map((responsibility, index) => (
+                        <li key={index}>• {responsibility}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <ul className="space-y-2 text-muted-foreground">
+                      <li>• Design and develop high-quality software solutions</li>
+                      <li>• Collaborate with cross-functional teams to deliver projects</li>
+                      <li>• Write clean, maintainable, and well-documented code</li>
+                      <li>• Participate in code reviews and technical discussions</li>
+                      <li>• Stay updated with latest industry trends and technologies</li>
+                    </ul>
+                  )}
                 </div>
 
                 <Separator />
 
                 <div>
                   <h3 className="font-semibold mb-3">Requirements</h3>
-                  <ul className="space-y-2 text-muted-foreground">
-                    <li>• Bachelor's degree in Computer Science or related field</li>
-                    <li>• 3+ years of experience in software development</li>
-                    <li>• Proficiency in {job.tags.slice(0, 3).join(", ")}</li>
-                    <li>• Strong problem-solving and analytical skills</li>
-                    <li>• Excellent communication and teamwork abilities</li>
-                  </ul>
+                  {job.requirements && job.requirements.length > 0 ? (
+                    <ul className="space-y-2 text-muted-foreground">
+                      {job.requirements.map((requirement, index) => (
+                        <li key={index}>• {requirement}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <ul className="space-y-2 text-muted-foreground">
+                      <li>• Bachelor's degree in Computer Science or related field</li>
+                      <li>• 3+ years of experience in software development</li>
+                      <li>• Proficiency in {job.tags.slice(0, 3).join(", ")}</li>
+                      <li>• Strong problem-solving and analytical skills</li>
+                      <li>• Excellent communication and teamwork abilities</li>
+                    </ul>
+                  )}
                 </div>
 
                 <Separator />
 
                 <div>
                   <h3 className="font-semibold mb-3">Benefits</h3>
-                  <ul className="space-y-2 text-muted-foreground">
-                    <li>• Competitive salary and equity package</li>
-                    <li>• Comprehensive health, dental, and vision insurance</li>
-                    <li>• Flexible working hours and remote work options</li>
-                    <li>• Professional development opportunities</li>
-                    <li>• Modern office with great amenities</li>
-                  </ul>
+                  {job.benefits && job.benefits.length > 0 ? (
+                    <ul className="space-y-2 text-muted-foreground">
+                      {job.benefits.map((benefit, index) => (
+                        <li key={index}>• {benefit}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <ul className="space-y-2 text-muted-foreground">
+                      <li>• Competitive salary and equity package</li>
+                      <li>• Comprehensive health, dental, and vision insurance</li>
+                      <li>• Flexible working hours and remote work options</li>
+                      <li>• Professional development opportunities</li>
+                      <li>• Modern office with great amenities</li>
+                    </ul>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -233,7 +318,7 @@ export const JobDetail = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {jobsData.slice(0, 3).filter(j => j.id !== job.id).map((similarJob) => (
+                  {allJobs.slice(0, 3).filter(j => j.id !== job?.id).map((similarJob) => (
                     <div 
                       key={similarJob.id}
                       className="p-3 rounded-lg border border-border/50 hover:bg-muted/20 transition-colors cursor-pointer"

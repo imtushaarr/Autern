@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Clock, DollarSign, Building2 } from "lucide-react";
 
 interface JobCardProps {
-  id: number;
+  id: string;
   title: string;
   company: string;
   location: string;
@@ -14,6 +14,9 @@ interface JobCardProps {
   description: string;
   tags: string[];
   companyLogo?: string;
+  keyResponsibilities?: string[];
+  requirements?: string[];
+  benefits?: string[];
 }
 
 export const JobCard = ({ 

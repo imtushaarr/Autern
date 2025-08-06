@@ -21,10 +21,10 @@ export const Header = () => {
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2">
           <div className="h-8 w-8 rounded-lg bg-gradient-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-lg">J</span>
+            <span className="text-primary-foreground font-bold text-lg">A</span>
           </div>
           <span className="font-bold text-xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            JobBliss
+            Autern
           </span>
         </Link>
 
@@ -52,6 +52,11 @@ export const Header = () => {
           </Button>
           <Button variant="ghost" size="sm">
             <Bell className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/admin/login">
+              Admin
+            </Link>
           </Button>
           <Button variant="glass" size="sm">
             <User className="h-4 w-4 mr-2" />

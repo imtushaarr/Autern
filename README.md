@@ -1,4 +1,15 @@
-# Welcome to your Lovable project
+# TalentFlow - Modern Job Board Platform
+
+TalentFlow is a modern job board platform that connects talented professionals with amazing career opportunities. Built with cutting-edge technologies for the best user experience.
+
+## Features
+
+- 🚀 Modern, responsive design
+- 🔍 Advanced job search and filtering
+- 💼 Comprehensive job listings
+- 👨‍💼 Admin dashboard for job management
+- 📱 Mobile-first approach
+- 🎨 Beautiful UI with Tailwind CSS and shadcn/ui
 
 ## Project info
 

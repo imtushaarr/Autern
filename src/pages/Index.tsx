@@ -1,15 +1,46 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { HeroSection } from "@/components/HeroSection";
 import { JobCard } from "@/components/JobCard";
 import { FilterSection } from "@/components/FilterSection";
-import { jobsData } from "@/data/jobs";
+import { Job } from "@/data/jobs";
+import { subscribeToJobs, FirebaseJob } from "@/services/jobsService";
 
 const Index = () => {
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  // Convert Firebase job to local job format
+  const convertFirebaseJobToJob = (firebaseJob: FirebaseJob): Job => ({
+    id: firebaseJob.id || Math.random().toString(),
+    title: firebaseJob.title,
+    company: firebaseJob.company,
+    location: firebaseJob.location,
+    salary: firebaseJob.salary,
+    type: firebaseJob.type,
+    description: firebaseJob.description,
+    keyResponsibilities: firebaseJob.keyResponsibilities,
+    requirements: firebaseJob.requirements,
+    benefits: firebaseJob.benefits,
+    tags: firebaseJob.tags,
+    companyLogo: firebaseJob.companyLogo,
+    postedTime: firebaseJob.postedTime || 'Just now'
+  });
+
+  useEffect(() => {
+    // Subscribe to real-time updates
+    const unsubscribe = subscribeToJobs((firebaseJobs) => {
+      const convertedJobs = firebaseJobs.map(convertFirebaseJobToJob);
+      setJobs(convertedJobs);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
   
-  const filteredJobs = jobsData.filter(job => {
+  const filteredJobs = jobs.filter(job => {
     if (selectedFilters.length === 0) return true;
     
     return selectedFilters.some(filter => 
@@ -47,21 +78,33 @@ const Index = () => {
             
             {/* Jobs List */}
             <div className="lg:col-span-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredJobs.map((job) => (
-                  <div 
-                    key={job.id}
-                    onClick={() => navigate(`/job/${job.id}`)}
-                  >
-                    <JobCard {...job} />
+              {loading ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                    <p className="mt-2 text-muted-foreground">Loading jobs...</p>
                   </div>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {filteredJobs.map((job) => (
+                    <div 
+                      key={job.id}
+                      onClick={() => navigate(`/job/${job.id}`)}
+                    >
+                      <JobCard {...job} />
+                    </div>
+                  ))}
+                </div>
+              )}
               
-              {filteredJobs.length === 0 && (
+              {!loading && filteredJobs.length === 0 && (
                 <div className="text-center py-12">
                   <p className="text-lg text-muted-foreground">
-                    No jobs found matching your filters. Try adjusting your search criteria.
+                    {jobs.length === 0 
+                      ? "No jobs available yet. Check back soon!" 
+                      : "No jobs found matching your filters. Try adjusting your search criteria."
+                    }
                   </p>
                 </div>
               )}
