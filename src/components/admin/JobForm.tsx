@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,12 +12,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus } from "lucide-react";
-import { Job } from "@/data/jobs";
+import { X, Plus, Search, RefreshCw, Image } from "lucide-react";
+import { fetchCompanyLogo, generatePlaceholderLogo, type CompanyLogoResult } from "@/services/companyLogoService";
+import type { FirebaseJob } from "@/services/jobsService";
 
 interface JobFormProps {
-  job?: Job | null;
-  onSave: (job: Partial<Job>) => void;
+  job?: FirebaseJob | null;
+  onSave: (job: Partial<FirebaseJob>) => void;
   onCancel: () => void;
 }
 
@@ -40,6 +41,92 @@ export const JobForm = ({ job, onSave, onCancel }: JobFormProps) => {
   const [newResponsibility, setNewResponsibility] = useState("");
   const [newRequirement, setNewRequirement] = useState("");
   const [newBenefit, setNewBenefit] = useState("");
+  
+  // Logo-related state
+  const [logoLoading, setLogoLoading] = useState(false);
+  const [logoSuggestions, setLogoSuggestions] = useState<CompanyLogoResult[]>([]);
+  const [showManualInput, setShowManualInput] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string>("");
+
+  const fetchCompanyLogoAutomatically = useCallback(async (companyName: string) => {
+    if (formData.companyLogo && formData.companyLogo.trim() !== '') {
+      return; // Don't auto-fetch if user has manually set a logo
+    }
+
+    setLogoLoading(true);
+    try {
+      const result = await fetchCompanyLogo(companyName);
+      if (result.success && result.logoUrl) {
+        setFormData(prev => ({
+          ...prev,
+          companyLogo: result.logoUrl!
+        }));
+        setLogoSuggestions([result]);
+      } else {
+        setLogoSuggestions([]);
+        // Set placeholder logo if no logo found
+        setFormData(prev => ({
+          ...prev,
+          companyLogo: generatePlaceholderLogo(companyName)
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching company logo:', error);
+      setLogoSuggestions([]);
+    } finally {
+      setLogoLoading(false);
+    }
+  }, [formData.companyLogo]);
+
+  // Auto-fetch logo when company name changes
+  useEffect(() => {
+    const timeoutId = setTimeout(async () => {
+      if (formData.company && formData.company.length > 2) {
+        await fetchCompanyLogoAutomatically(formData.company);
+      }
+    }, 500); // Debounce for 500ms
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.company, fetchCompanyLogoAutomatically]);
+
+  // Update logo preview when companyLogo changes
+  useEffect(() => {
+    if (formData.companyLogo) {
+      setLogoPreview(formData.companyLogo);
+    } else if (formData.company) {
+      setLogoPreview(generatePlaceholderLogo(formData.company));
+    } else {
+      setLogoPreview("");
+    }
+  }, [formData.companyLogo, formData.company]);
+
+  const handleManualLogoSearch = async () => {
+    if (!formData.company) return;
+    
+    setLogoLoading(true);
+    try {
+      const result = await fetchCompanyLogo(formData.company);
+      if (result.success && result.logoUrl) {
+        setFormData(prev => ({
+          ...prev,
+          companyLogo: result.logoUrl!
+        }));
+      }
+    } catch (error) {
+      console.error('Error in manual logo search:', error);
+    } finally {
+      setLogoLoading(false);
+    }
+  };
+
+  const handleLogoInputChange = (value: string) => {
+    setFormData(prev => ({ ...prev, companyLogo: value }));
+  };
+
+  const clearLogo = () => {
+    setFormData(prev => ({ ...prev, companyLogo: "" }));
+    setLogoPreview("");
+  };
 
   const handleAddTag = () => {
     if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
@@ -175,14 +262,89 @@ export const JobForm = ({ job, onSave, onCancel }: JobFormProps) => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="companyLogo">Company Logo URL (Optional)</Label>
-                  <Input
-                    id="companyLogo"
-                    value={formData.companyLogo}
-                    onChange={(e) => setFormData(prev => ({ ...prev, companyLogo: e.target.value }))}
-                    placeholder="https://example.com/logo.png"
-                    type="url"
-                  />
+                  <Label>Company Logo</Label>
+                  <div className="space-y-3">
+                    {/* Logo Preview */}
+                    {logoPreview && (
+                      <div className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50 dark:bg-gray-800">
+                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-white flex items-center justify-center border">
+                          <img 
+                            src={logoPreview} 
+                            alt="Company logo preview" 
+                            className="w-10 h-10 object-contain"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = generatePlaceholderLogo(formData.company || 'Company');
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">Logo Preview</p>
+                          <p className="text-xs text-muted-foreground">
+                            {logoSuggestions.length > 0 && logoSuggestions[0].source 
+                              ? `Source: ${logoSuggestions[0].source.replace('_', ' ')}`
+                              : 'Custom logo'
+                            }
+                          </p>
+                        </div>
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={clearLogo}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {/* Auto-detection status */}
+                    {logoLoading && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Searching for company logo...
+                      </div>
+                    )}
+                    
+                    {/* Manual input toggle */}
+                    <div className="flex gap-2">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleManualLogoSearch}
+                        disabled={!formData.company || logoLoading}
+                      >
+                        <Search className="w-4 h-4 mr-2" />
+                        Search Logo
+                      </Button>
+                      
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setShowManualInput(!showManualInput)}
+                      >
+                        <Image className="w-4 h-4 mr-2" />
+                        Manual URL
+                      </Button>
+                    </div>
+                    
+                    {/* Manual URL input */}
+                    {showManualInput && (
+                      <div className="space-y-2">
+                        <Input
+                          value={formData.companyLogo}
+                          onChange={(e) => handleLogoInputChange(e.target.value)}
+                          placeholder="https://example.com/logo.png"
+                          type="url"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Enter a direct URL to the company logo image
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
                 <div>

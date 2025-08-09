@@ -5,10 +5,10 @@ import {
   TrendingUp, 
   Eye 
 } from "lucide-react";
-import { Job } from "@/data/jobs";
+import type { FirebaseJob } from "@/services/jobsService";
 
 interface StatsCardsProps {
-  jobs: Job[];
+  jobs: FirebaseJob[];
 }
 
 export const StatsCards = ({ jobs }: StatsCardsProps) => {

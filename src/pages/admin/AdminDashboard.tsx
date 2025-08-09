@@ -6,9 +6,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Users, 
   TrendingUp, 
-  Eye
+  Eye,
+  Plus,
+  Briefcase,
+  Target,
+  Activity
 } from "lucide-react";
-import { Job } from "@/data/jobs";
 import { JobForm } from "@/components/admin/JobForm";
 import { JobsTable } from "@/components/admin/JobsTable";
 import { AdminOverview } from "@/components/admin/AdminOverview";
@@ -18,108 +21,34 @@ import {
   updateJob, 
   deleteJob, 
   subscribeToJobs,
-  FirebaseJob 
+  type FirebaseJob 
 } from "@/services/jobsService";
 import { useToast } from "@/hooks/use-toast";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [showJobForm, setShowJobForm] = useState(false);
-  const [editingJob, setEditingJob] = useState<Job | null>(null);
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [editingJob, setEditingJob] = useState<FirebaseJob | null>(null);
+  const [jobs, setJobs] = useState<FirebaseJob[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Convert Firebase job to local job format
-  const convertFirebaseJobToJob = (firebaseJob: FirebaseJob): Job => ({
-    id: firebaseJob.id ? firebaseJob.id : Math.random().toString(),
-    title: firebaseJob.title,
-    company: firebaseJob.company,
-    location: firebaseJob.location,
-    salary: firebaseJob.salary,
-    type: firebaseJob.type,
-    description: firebaseJob.description,
-    keyResponsibilities: firebaseJob.keyResponsibilities,
-    requirements: firebaseJob.requirements,
-    benefits: firebaseJob.benefits,
-    tags: firebaseJob.tags,
-    companyLogo: firebaseJob.companyLogo,
-    postedTime: firebaseJob.postedTime || 'Just now'
-  });
-
-  // Convert local job to Firebase job format
-  const convertJobToFirebaseJob = (job: Partial<Job>): Omit<FirebaseJob, 'id' | 'createdAt' | 'updatedAt' | 'postedTime'> => ({
-    title: job.title || '',
-    company: job.company || '',
-    location: job.location || '',
-    salary: job.salary || '',
-    type: job.type || '',
-    description: job.description || '',
-    keyResponsibilities: job.keyResponsibilities || [],
-    requirements: job.requirements || [],
-    benefits: job.benefits || [],
-    tags: job.tags || [],
-    companyLogo: job.companyLogo
-  });
-
+  // Load jobs from Firebase on component mount
   useEffect(() => {
-    // Subscribe to real-time updates
     const unsubscribe = subscribeToJobs((firebaseJobs) => {
-      const convertedJobs = firebaseJobs.map(convertFirebaseJobToJob);
-      setJobs(convertedJobs);
+      setJobs(firebaseJobs);
       setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
-  const handleEditJob = (job: Job) => {
+  const handleEditJob = (job: FirebaseJob) => {
     setEditingJob(job);
     setShowJobForm(true);
   };
 
-  const handleCreateJob = () => {
-    setEditingJob(null);
-    setShowJobForm(true);
-  };
-
-  const handleSaveJob = async (jobData: Partial<Job>) => {
-    try {
-      const firebaseJobData = convertJobToFirebaseJob(jobData);
-      
-      if (editingJob?.id) {
-        // Update existing job
-        await updateJob(editingJob.id, firebaseJobData);
-        toast({
-          title: "Success",
-          description: "Job updated successfully",
-        });
-      } else {
-        // Create new job
-        await createJob(firebaseJobData);
-        toast({
-          title: "Success",
-          description: "Job created successfully",
-        });
-      }
-      
-      setShowJobForm(false);
-      setEditingJob(null);
-    } catch (error) {
-      console.error('Error saving job:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save job. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleDeleteJob = async (jobId: string) => {
-    if (!confirm("Are you sure you want to delete this job?")) {
-      return;
-    }
-
     try {
       await deleteJob(jobId);
       toast({
@@ -127,50 +56,139 @@ const AdminDashboard = () => {
         description: "Job deleted successfully",
       });
     } catch (error) {
-      console.error('Error deleting job:', error);
       toast({
         title: "Error",
-        description: "Failed to delete job. Please try again.",
+        description: "Failed to delete job",
         variant: "destructive",
       });
     }
   };
 
+  const handleSaveJob = async (jobData: Partial<FirebaseJob>) => {
+    try {
+      if (editingJob && editingJob.id) {
+        // Update existing job
+        await updateJob(editingJob.id, jobData);
+        toast({
+          title: "Success",
+          description: "Job updated successfully",
+        });
+      } else {
+        // Create new job
+        await createJob(jobData as Omit<FirebaseJob, 'id' | 'createdAt' | 'updatedAt' | 'postedTime'>);
+        toast({
+          title: "Success", 
+          description: "Job created successfully",
+        });
+      }
+      
+      setShowJobForm(false);
+      setEditingJob(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save job",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateJob = () => {
+    setEditingJob(null);
+    setShowJobForm(true);
+  };
+
   if (showJobForm) {
     return (
-      <JobForm 
-        job={editingJob}
-        onSave={handleSaveJob}
-        onCancel={() => {
-          setShowJobForm(false);
-          setEditingJob(null);
-        }}
-      />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              {editingJob ? 'Edit Job' : 'Create New Job'}
+            </h1>
+            <p className="text-muted-foreground">
+              {editingJob ? 'Update job details and requirements' : 'Post a new job opportunity'}
+            </p>
+          </div>
+        </div>
+        
+        <JobForm 
+          job={editingJob}
+          onSave={handleSaveJob}
+          onCancel={() => {
+            setShowJobForm(false);
+            setEditingJob(null);
+          }}
+        />
+      </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">Loading jobs...</p>
+          <div className="h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="jobs">Jobs</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            Admin Dashboard
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Manage your job postings and track performance
+          </p>
+        </div>
+        <Button 
+          onClick={handleCreateJob}
+          className="bg-gradient-primary hover:scale-105 transition-all duration-200 shadow-glow-primary"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Post New Job
+        </Button>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+        <TabsList className="grid w-full grid-cols-4 bg-card/50 backdrop-blur-sm p-1 rounded-xl">
+          <TabsTrigger 
+            value="overview" 
+            className="data-[state=active]:bg-gradient-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow-primary transition-all duration-200"
+          >
+            <Activity className="h-4 w-4 mr-2" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger 
+            value="jobs"
+            className="data-[state=active]:bg-gradient-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow-primary transition-all duration-200"
+          >
+            <Briefcase className="h-4 w-4 mr-2" />
+            Jobs
+          </TabsTrigger>
+          <TabsTrigger 
+            value="analytics"
+            className="data-[state=active]:bg-gradient-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow-primary transition-all duration-200"
+          >
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Analytics
+          </TabsTrigger>
+          <TabsTrigger 
+            value="settings"
+            className="data-[state=active]:bg-gradient-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow-primary transition-all duration-200"
+          >
+            <Target className="h-4 w-4 mr-2" />
+            Settings
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview">
+        <TabsContent value="overview" className="space-y-6">
           <AdminOverview 
             onEditJob={handleEditJob}
             onDeleteJob={handleDeleteJob}
@@ -179,86 +197,120 @@ const AdminDashboard = () => {
           />
         </TabsContent>
 
-        <TabsContent value="jobs">
-          <JobsTable 
-            jobs={jobs}
-            onEdit={handleEditJob}
-            onDelete={handleDeleteJob}
-          />
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Job Views</CardTitle>
-                <Eye className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">12,543</div>
-                <p className="text-xs text-muted-foreground">
-                  +15% from last month
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Applications</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">1,247</div>
-                <p className="text-xs text-muted-foreground">
-                  +8% from last month
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">9.8%</div>
-                <p className="text-xs text-muted-foreground">
-                  +2.1% from last month
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
+        <TabsContent value="jobs" className="space-y-6">
+          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
             <CardHeader>
-              <CardTitle>Performance Analytics</CardTitle>
-              <CardDescription>
-                Detailed insights coming soon...
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Briefcase className="h-5 w-5 text-primary" />
+                    Job Management
+                  </CardTitle>
+                  <CardDescription>
+                    Manage all your job postings in one place
+                  </CardDescription>
+                </div>
+                <Button onClick={handleCreateJob} variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Job
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="h-64 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg">
-                <p className="text-gray-500">Analytics charts will be implemented here</p>
-              </div>
+              <JobsTable 
+                jobs={jobs}
+                onEdit={handleEditJob}
+                onDelete={handleDeleteJob}
+              />
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="settings">
-          <Card>
+        <TabsContent value="analytics" className="space-y-6">
+          <div className="grid gap-6">
+            <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Performance Analytics
+                </CardTitle>
+                <CardDescription>
+                  Track your job posting performance and engagement
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="p-6 bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-xl border border-blue-500/20">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-blue-500/20 rounded-lg">
+                        <Eye className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <span className="font-medium">Total Views</span>
+                    </div>
+                    <p className="text-3xl font-bold mb-2">2,340</p>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="bg-green-500/20 text-green-700 border-green-500/30">
+                        +12%
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">from last month</span>
+                    </div>
+                  </div>
+                  
+                  <div className="p-6 bg-gradient-to-br from-green-500/10 to-green-600/10 rounded-xl border border-green-500/20">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-green-500/20 rounded-lg">
+                        <Users className="h-5 w-5 text-green-600" />
+                      </div>
+                      <span className="font-medium">Applications</span>
+                    </div>
+                    <p className="text-3xl font-bold mb-2">156</p>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="bg-green-500/20 text-green-700 border-green-500/30">
+                        +8%
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">from last month</span>
+                    </div>
+                  </div>
+                  
+                  <div className="p-6 bg-gradient-to-br from-purple-500/10 to-purple-600/10 rounded-xl border border-purple-500/20">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-purple-500/20 rounded-lg">
+                        <Target className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <span className="font-medium">Conversion Rate</span>
+                    </div>
+                    <p className="text-3xl font-bold mb-2">6.7%</p>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="bg-green-500/20 text-green-700 border-green-500/30">
+                        +2.1%
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">from last month</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="settings" className="space-y-6">
+          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
             <CardHeader>
-              <CardTitle>Settings</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-primary" />
+                Admin Settings
+              </CardTitle>
               <CardDescription>
-                Manage your platform settings and preferences
+                Configure your admin preferences and system settings
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-xl border border-primary/20">
                   <div>
-                    <h3 className="font-medium">Auto-approve jobs</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Automatically approve new job postings
+                    <h3 className="font-semibold">Email Notifications</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Get notified about new applications and system updates
                     </p>
                   </div>
                   <Button variant="outline" size="sm">
@@ -266,27 +318,27 @@ const AdminDashboard = () => {
                   </Button>
                 </div>
                 
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-accent/5 to-primary/5 rounded-xl border border-accent/20">
                   <div>
-                    <h3 className="font-medium">Email notifications</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Get notified about new applications
+                    <h3 className="font-semibold">API Access</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Manage API keys, webhooks, and integrations
                     </p>
                   </div>
                   <Button variant="outline" size="sm">
-                    Configure
+                    Manage
                   </Button>
                 </div>
-                
-                <div className="flex items-center justify-between">
+
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-xl border border-primary/20">
                   <div>
-                    <h3 className="font-medium">API access</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Manage API keys and webhooks
+                    <h3 className="font-semibold">Security Settings</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Two-factor authentication and access controls
                     </p>
                   </div>
                   <Button variant="outline" size="sm">
-                    Configure
+                    Security
                   </Button>
                 </div>
               </div>

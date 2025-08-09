@@ -10,16 +10,16 @@ import {
   Calendar,
   Database
 } from "lucide-react";
-import { Job } from "@/data/jobs";
+import type { FirebaseJob } from "@/services/jobsService";
 import { StatsCards } from "@/components/admin/StatsCards";
 import { initializeFirebaseData } from "@/utils/initializeData";
 import { useToast } from "@/hooks/use-toast";
 
 interface AdminOverviewProps {
-  onEditJob: (job: Job) => void;
+  onEditJob: (job: FirebaseJob) => void;
   onDeleteJob: (jobId: string) => void;
   onCreateJob: () => void;
-  jobs: Job[];
+  jobs: FirebaseJob[];
 }
 
 export const AdminOverview = ({ onEditJob, onDeleteJob, onCreateJob, jobs }: AdminOverviewProps) => {

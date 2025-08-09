@@ -1,34 +1,53 @@
-# 🔥 Autern Firebase Admin Setup Guide
+# 🔥 Autern Firebase Admin Setup Guide - Enhanced Security
 
-## 🎯 Your Autern Job Board is Ready!
+## 🎯 Your Autern Job Board is Ready with Advanced Security!
 
-**Autern - A Product Of Kraf Technologies** is now fully integrated with Firebase and ready for real-time job management!
+**Autern - A Product Of Kraf Technologies** is now fully integrated with Firebase and includes enterprise-level security features!
+
+## 🛡️ Enhanced Security Features
+
+### ✅ Advanced Authentication System
+- **Admin Email Verification**: Only predefined admin emails can access the system
+- **Role-based Access Control**: Users must have admin role in Firestore
+- **Session Management**: 2-hour session timeout with automatic logout
+- **Rate Limiting**: 5 login attempts before temporary lockout (15 minutes)
+- **Generic Error Messages**: No specific error details exposed to prevent information leakage
+- **Auto-redirect**: Authenticated users automatically redirected from login page
+
+### ✅ Security Hardening
+- **Password Visibility Toggle**: Optional password viewing with security controls
+- **Form Security**: Password cleared on failed attempts, form disabled after lockout
+- **Registration Disabled**: New accounts can only be created by system administrators
+- **Access Logging**: Last login time tracked for audit purposes
+- **Secure Logout**: Complete session termination with form clearing
 
 ## 🚀 Quick Start
 
 ### Step 1: Access Your Application
 - **Public Site**: http://localhost:8081
-- **Admin Login**: http://localhost:8081/admin/login
+- **Admin Login**: http://localhost:8081/admin/login (Now with enhanced security!)
 
-### Step 2: Create Firebase Admin Account
+### Step 2: Create Your Admin Account (Enhanced Security Method)
 
-1. **Go to Firebase Console**
-   - Visit: https://console.firebase.google.com/
-   - Select your project: `autern-ade24`
+**Important**: The login form no longer shows setup instructions for security reasons.
 
-2. **Enable Authentication**
-   - Click **Authentication** in the left sidebar
-   - Go to **Sign-in method** tab
-   - Enable **Email/Password** provider
-   - Click **Save**
+#### Method 1: Firebase Console (Recommended for Security)
+1. Go to [Firebase Console](https://console.firebase.google.com)
+2. Select your Autern project
+3. Navigate to Authentication > Users
+4. Click "Add user"
+5. **Use one of these pre-authorized admin emails**:
+   - `admin@autern.com`
+   - `admin@kraf.tech`
+6. Set a strong password (minimum 6 characters)
+7. The system will automatically create admin privileges on first login
 
-3. **Create Admin User**
-   - Go to **Users** tab in Authentication
-   - Click **Add user**
-   - Enter details:
-     - **Email**: `admin@autern.com` (or your preferred email)
-     - **Password**: `your_secure_password`
-   - Click **Add user**
+#### Method 2: Quick Test Account
+For testing purposes, create a user with:
+- **Email**: `admin@autern.com`
+- **Password**: `admin123` (change this in production!)
+
+**Security Note**: Only emails in the ADMIN_EMAILS array can access the admin panel.
 
 ### Step 3: Set Up Firestore Database
 

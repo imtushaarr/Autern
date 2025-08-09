@@ -24,11 +24,11 @@ import {
   Search,
   Filter
 } from "lucide-react";
-import { Job } from "@/data/jobs";
+import type { FirebaseJob } from "@/services/jobsService";
 
 interface JobsTableProps {
-  jobs: Job[];
-  onEdit: (job: Job) => void;
+  jobs: FirebaseJob[];
+  onEdit: (job: FirebaseJob) => void;
   onDelete: (jobId: string) => void;
 }
 

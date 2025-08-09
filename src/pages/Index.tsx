@@ -8,6 +8,8 @@ import { subscribeToJobs, FirebaseJob } from "@/services/jobsService";
 
 const Index = () => {
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [locationSearch, setLocationSearch] = useState("");
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -41,13 +43,46 @@ const Index = () => {
   }, []);
   
   const filteredJobs = jobs.filter(job => {
-    if (selectedFilters.length === 0) return true;
-    
-    return selectedFilters.some(filter => 
-      job.type === filter || 
-      job.tags.includes(filter) ||
-      (filter.includes('$') && job.salary.includes(filter.split('-')[0].replace('$', '').replace('k', '')))
-    );
+    // Search term filter (title, company, description, tags)
+    const matchesSearch = searchTerm === "" || 
+      job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    // Location filter
+    const matchesLocation = locationSearch === "" ||
+      job.location.toLowerCase().includes(locationSearch.toLowerCase());
+
+    // Filter tags/categories
+    const matchesFilters = selectedFilters.length === 0 || selectedFilters.some(filter => {
+      // Job type filter
+      if (job.type === filter) return true;
+      
+      // Tags/skills filter
+      if (job.tags.includes(filter)) return true;
+      
+      // Salary range filter
+      if (filter.includes('$')) {
+        const range = filter.replace('$', '').replace('k', '000').replace('+', '');
+        if (range.includes('-')) {
+          const [min, max] = range.split('-').map(Number);
+          const jobSalary = job.salary.replace(/[$k,-]/g, '');
+          const jobMin = parseInt(jobSalary.split('-')[0]) * 1000;
+          const jobMax = parseInt(jobSalary.split('-')[1] || jobSalary) * 1000;
+          return jobMin >= min * 1000 && jobMax <= max * 1000;
+        } else {
+          const minSalary = parseInt(range) * 1000;
+          const jobSalary = job.salary.replace(/[$k,-]/g, '');
+          const jobMin = parseInt(jobSalary.split('-')[0]) * 1000;
+          return jobMin >= minSalary;
+        }
+      }
+
+      return false;
+    });
+
+    return matchesSearch && matchesLocation && matchesFilters;
   });
 
   return (
@@ -73,6 +108,10 @@ const Index = () => {
               <FilterSection 
                 selectedFilters={selectedFilters}
                 onFilterChange={setSelectedFilters}
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                locationSearch={locationSearch}
+                onLocationChange={setLocationSearch}
               />
             </div>
             
@@ -86,11 +125,12 @@ const Index = () => {
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
                   {filteredJobs.map((job) => (
                     <div 
                       key={job.id}
                       onClick={() => navigate(`/job/${job.id}`)}
+                      className="h-full"
                     >
                       <JobCard {...job} />
                     </div>

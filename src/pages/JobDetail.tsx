@@ -1,47 +1,37 @@
-import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { 
-  ArrowLeft, 
-  MapPin, 
-  Clock, 
-  DollarSign, 
-  Building2, 
-  Users, 
-  Calendar,
-  Share2,
-  Heart,
-  Send
-} from "lucide-react";
-import { Job } from "@/data/jobs";
-import { getJobById, subscribeToJobs, FirebaseJob } from "@/services/jobsService";
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
+import { Clock, MapPin, DollarSign, Building, Building2, User, Users, Share2, Heart, Twitter, Linkedin, Facebook, Copy, ArrowLeft, Send } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/hooks/useAuth';
+import { getJobById, subscribeToJobs } from '@/services/jobsService';
+import type { FirebaseJob } from '@/services/jobsService';
 
-export const JobDetail = () => {
+const JobDetail: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [job, setJob] = useState<Job | null>(null);
+  const [job, setJob] = useState<FirebaseJob | null>(null);
   const [loading, setLoading] = useState(true);
-  const [allJobs, setAllJobs] = useState<Job[]>([]);
+  const [allJobs, setAllJobs] = useState<FirebaseJob[]>([]);
+  const [showShareMenu, setShowShareMenu] = useState(false);
   
-  // Convert Firebase job to local job format
-  const convertFirebaseJobToJob = (firebaseJob: FirebaseJob): Job => ({
-    id: firebaseJob.id || Math.random().toString(),
-    title: firebaseJob.title,
-    company: firebaseJob.company,
-    location: firebaseJob.location,
-    salary: firebaseJob.salary,
-    type: firebaseJob.type,
-    description: firebaseJob.description,
-    keyResponsibilities: firebaseJob.keyResponsibilities,
-    requirements: firebaseJob.requirements,
-    benefits: firebaseJob.benefits,
-    tags: firebaseJob.tags,
-    companyLogo: firebaseJob.companyLogo,
-    postedTime: firebaseJob.postedTime || 'Just now'
-  });
+  // Convert Firebase job to local job format (remove conversion for now)
+  const convertFirebaseJobToJob = (firebaseJob: FirebaseJob): FirebaseJob => firebaseJob;
+
+  // Close share menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (showShareMenu && !target.closest('.share-menu-container')) {
+        setShowShareMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showShareMenu]);
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -72,6 +62,36 @@ export const JobDetail = () => {
 
     return () => unsubscribe();
   }, []);
+
+  const handleShare = (platform: string) => {
+    if (!job) return;
+    
+    const url = window.location.href;
+    const title = `${job.title} at ${job.company}`;
+    const description = `Check out this ${job.type} opportunity: ${job.title} at ${job.company} in ${job.location}. ${job.description.substring(0, 100)}...`;
+    
+    const shareUrls = {
+      twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}&hashtags=jobs,career,${job.tags.slice(0, 2).join(',')}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&t=${encodeURIComponent(title)}`,
+      whatsapp: `https://wa.me/?text=${encodeURIComponent(`${title} - ${url}`)}`,
+      telegram: `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`
+    };
+
+    if (platform === 'copy') {
+      navigator.clipboard.writeText(url).then(() => {
+        alert('Link copied to clipboard!');
+      });
+    } else if (shareUrls[platform as keyof typeof shareUrls]) {
+      window.open(shareUrls[platform as keyof typeof shareUrls], '_blank', 'width=600,height=400');
+    }
+    
+    setShowShareMenu(false);
+  };
+
+  const toggleShareMenu = () => {
+    setShowShareMenu(!showShareMenu);
+  };
 
   if (loading) {
     return (
@@ -135,9 +155,78 @@ export const JobDetail = () => {
                     </div>
                   </div>
                   <div className="flex space-x-2">
-                    <Button variant="glass" size="sm">
-                      <Share2 className="w-4 h-4" />
-                    </Button>
+                    <div className="relative share-menu-container">
+                      <Button 
+                        variant="glass" 
+                        size="sm"
+                        onClick={toggleShareMenu}
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </Button>
+                      
+                      {showShareMenu && (
+                        <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-border rounded-lg shadow-lg z-10">
+                          <div className="p-2">
+                            <div className="text-sm font-medium text-muted-foreground mb-2 px-2">Share this job</div>
+                            
+                            <button
+                              onClick={() => handleShare('linkedin')}
+                              className="flex items-center gap-3 w-full px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                            >
+                              <Linkedin className="w-4 h-4 text-blue-600" />
+                              Share on LinkedIn
+                            </button>
+                            
+                            <button
+                              onClick={() => handleShare('twitter')}
+                              className="flex items-center gap-3 w-full px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                            >
+                              <Twitter className="w-4 h-4 text-blue-400" />
+                              Share on Twitter
+                            </button>
+                            
+                            <button
+                              onClick={() => handleShare('facebook')}
+                              className="flex items-center gap-3 w-full px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                            >
+                              <Facebook className="w-4 h-4 text-blue-700" />
+                              Share on Facebook
+                            </button>
+                            
+                            <button
+                              onClick={() => handleShare('whatsapp')}
+                              className="flex items-center gap-3 w-full px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                            >
+                              <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                                <span className="text-white text-xs font-bold">W</span>
+                              </div>
+                              Share on WhatsApp
+                            </button>
+                            
+                            <button
+                              onClick={() => handleShare('telegram')}
+                              className="flex items-center gap-3 w-full px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                            >
+                              <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                                <span className="text-white text-xs font-bold">T</span>
+                              </div>
+                              Share on Telegram
+                            </button>
+                            
+                            <div className="border-t border-border my-2"></div>
+                            
+                            <button
+                              onClick={() => handleShare('copy')}
+                              className="flex items-center gap-3 w-full px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                            >
+                              <Copy className="w-4 h-4 text-gray-600" />
+                              Copy Link
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
                     <Button variant="glass" size="sm">
                       <Heart className="w-4 h-4" />
                     </Button>
@@ -341,3 +430,5 @@ export const JobDetail = () => {
     </div>
   );
 };
+
+export default JobDetail;

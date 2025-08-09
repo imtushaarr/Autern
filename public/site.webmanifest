@@ -1,0 +1,21 @@
+{
+  "name": "Autern - Job Board Platform",
+  "short_name": "Autern",
+  "description": "Find your dream job or discover top talent. A modern job board connecting employers and job seekers.",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#4F46E5",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/autern.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/autern.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
